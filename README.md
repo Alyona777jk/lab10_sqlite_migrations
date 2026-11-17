@@ -1,17 +1,41 @@
-# lab10_sqlite_migrations
+# Практична робота 10 (Частина 3): Міграції, оптимізація та best practices (SQLite)
 
-A new Flutter project.
+**Дисципліна:** Програмування для мобільних платформ  
+**Варіант 1:** Міграція версій бази даних (SQLite)
 
-## Getting Started
+## Мета роботи
+- Реалізувати систему міграцій для локальної бази даних SQLite з версіонуванням схеми (`v1 → v4`).
+- Забезпечити зворотну сумісність (backwards compatibility), збереження даних користувачів, перевірку цілісності та механізм відкату (`ROLLBACK`) при виникненні помилок.
+- Створити UI-екран для перевірки міграцій з будь-якої проміжної версії та перегляду логів у реальному часі.
 
-This project is a starting point for a Flutter application.
+## Еволюція схеми бази даних
 
-A few resources to get you started if this is your first Flutter project:
+| Версія | Зміни у схемі | Опис |
+| :--- | :--- | :--- |
+| **v1** | `CREATE TABLE users (id, name, email)` | Початкова таблиця користувачів |
+| **v2** | `ALTER TABLE users ADD COLUMN phone TEXT` | Додавання контактного телефону |
+| **v3** | `CREATE TABLE preferences (id, userId, theme, language)` | Таблиця налаштувань зі зв'язком `FOREIGN KEY` та автозаповненням для існуючих користувачів |
+| **v4** | `CREATE INDEX idx_users_email ...` та `idx_pref_user` | Додавання індексів для оптимізації вибірок |
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Реалізований функціонал
+- **Покрокова міграція (`_upgradeDB`):** оновлення з будь-якої старої версії (`1`, `2` або `3`) до актуальної `4`-ї.
+- **Атомарність та Rollback:** використання точок збереження SQLite (`SAVEPOINT` / `ROLLBACK TO SAVEPOINT`) для безпечного скасування змін у разі збою.
+- **Перевірка цілісності:** валідація бази після міграції через `PRAGMA integrity_check` та `PRAGMA foreign_key_check`.
+- **UI тестування (`MigrationTestScreen`):**
+  - відображення поточної версії БД, структури таблиці `users`, активних індексів та повної SQL-схеми;
+  - інтерактивний запуск міграції з вибором стартової версії (`v1`, `v2`, `v3`);
+  - тестування аварійного сценарію (`Тест Rollback`);
+  - консоль логів процесу міграції в реальному часі.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Структура проєкту
+```text
+lib/
+├── database/
+│   └── database_migration_helper.dart  # Логіка версіонування, міграцій, Rollback та тестів
+├── screens/
+│   └── migration_test_screen.dart      # Інтерфейс для тестування та перегляду логів
+└── main.dart                           # Точка входу в застосунок
+Запуск проєкту
+Bash
+flutter pub get
+flutter run
